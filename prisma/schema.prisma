@@ -1,0 +1,42 @@
+// This is your Prisma schema file
+// https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Account {
+  id           String        @id @default(uuid())
+  name         String
+  balance      Decimal       @default(0) @db.Decimal(20, 2)
+  createdAt    DateTime      @default(now()) @map("created_at")
+  transactions Transaction[]
+
+  @@map("accounts")
+}
+
+model Transaction {
+  id          String          @id @default(uuid())
+  accountId   String          @map("account_id")
+  type        TransactionType
+  amount      Decimal         @db.Decimal(20, 2)
+  description String
+  referenceId String          @map("reference_id")
+  createdAt   DateTime        @default(now()) @map("created_at")
+
+  account Account @relation(fields: [accountId], references: [id])
+
+  // Unique constraint: same reference_id can't be reused within the same account
+  @@unique([accountId, referenceId])
+  @@map("transactions")
+}
+
+enum TransactionType {
+  credit
+  debit
+}
